@@ -5,7 +5,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Check, Crop, X } from 'lucide-react-native';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,

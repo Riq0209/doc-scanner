@@ -2,7 +2,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { Camera as CameraIcon, Image as ImageIcon, Scan } from 'lucide-react-native';
+import { Camera as CameraIcon, FileText, Image as ImageIcon, Scan } from 'lucide-react-native';
 import React from 'react';
 import {
   Alert,
@@ -73,6 +73,11 @@ export default function HomeScreen() {
       console.error('Image picker error:', error);
       Alert.alert('Error', 'Failed to pick image');
     }
+  };
+
+  const convertImageToPDF = () => {
+    // Navigate to the optimized PDF converter screen
+    router.push('/pdf-converter');
   };
 
   const dynamicStyles = StyleSheet.create({
@@ -153,6 +158,21 @@ export default function HomeScreen() {
       fontSize: 16,
       fontWeight: '600',
     },
+    pdfButton: {
+      backgroundColor: '#FF6B35', // Orange color for PDF
+      paddingVertical: 16,
+      paddingHorizontal: 24,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'row',
+      gap: 8,
+    },
+    pdfButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
   });
 
   return (
@@ -161,7 +181,7 @@ export default function HomeScreen() {
         <View style={dynamicStyles.header}>
           <Text style={dynamicStyles.headerTitle}>Document Scanner</Text>
           <Text style={dynamicStyles.headerSubtitle}>
-            Choose how you want to scan your documents
+            Scan documents, extract text, or convert images to PDF
           </Text>
         </View>
 
@@ -193,6 +213,21 @@ export default function HomeScreen() {
             <TouchableOpacity style={dynamicStyles.galleryButton} onPress={pickFromGallery}>
               <ImageIcon size={20} color={colors.tint} />
               <Text style={dynamicStyles.galleryButtonText}>Choose Photo</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* PDF Conversion Option */}
+          <View style={dynamicStyles.scanOption}>
+            <View style={styles.optionHeader}>
+              <FileText size={32} color={colors.tint} />
+              <Text style={dynamicStyles.scanOptionTitle}>Convert to PDF</Text>
+            </View>
+            <Text style={dynamicStyles.scanOptionDescription}>
+              Select multiple images from your gallery and convert them into a professional PDF document. Preview, rearrange, and customize settings before generating.
+            </Text>
+            <TouchableOpacity style={dynamicStyles.pdfButton} onPress={convertImageToPDF}>
+              <FileText size={20} color="#fff" />
+              <Text style={dynamicStyles.pdfButtonText}>Create PDF</Text>
             </TouchableOpacity>
           </View>
 

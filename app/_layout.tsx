@@ -46,6 +46,15 @@ function RootLayoutNav() {
           animationDuration: 300
         }} 
       />
+      <Stack.Screen 
+        name="pdf-converter" 
+        options={{ 
+          headerShown: false,
+          presentation: "card",
+          animation: "slide_from_right",
+          animationDuration: 300
+        }} 
+      />
     </Stack>
   );
 }
