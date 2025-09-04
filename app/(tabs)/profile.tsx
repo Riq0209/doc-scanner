@@ -1,34 +1,33 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import {
-    Bell,
-    Camera,
-    ChevronRight,
-    FileText,
-    Globe,
-    Info,
-    Lock,
-    LogOut,
-    Moon,
-    Settings as SettingsIcon,
-    Shield,
-    Smartphone,
-    Sun,
-    Trash2,
-    User,
-    UserCircle
+  Bell,
+  Camera,
+  ChevronRight,
+  FileText,
+  Info,
+  Lock,
+  LogOut,
+  Moon,
+  Settings as SettingsIcon,
+  Shield,
+  Smartphone,
+  Sun,
+  Trash2,
+  User,
+  UserCircle
 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -285,7 +284,6 @@ export default function ProfileScreen() {
       justifyContent: 'space-between',
       paddingHorizontal: 16,
       paddingVertical: 16,
-      backgroundColor: colors.cardBackground,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
@@ -447,13 +445,6 @@ export default function ProfileScreen() {
             subtitle={`Currently using ${getThemeLabel().toLowerCase()} theme`}
             value={themeMode === 'dark'}
             onValueChange={toggleTheme}
-          />
-          <ProfileItem
-            icon={<Globe size={20} color={colors.tint} />}
-            title="Language"
-            subtitle="English (US)"
-            showChevron={true}
-            onPress={() => Alert.alert('Feature Coming Soon', 'Language selection will be available soon.')}
           />
           <ProfileItem
             icon={<Smartphone size={20} color={colors.warning} />}
