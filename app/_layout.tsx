@@ -15,7 +15,7 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ 
       headerBackTitle: "Back",
-      animation: "slide_from_right",
+      animation: "none",
       animationDuration: 300
     }}>
       <Stack.Screen 
@@ -23,7 +23,7 @@ function RootLayoutNav() {
         options={{ 
           headerShown: false,
           presentation: "fullScreenModal",
-          animation: "slide_from_bottom",
+          animation: "none",
           animationDuration: 400
         }} 
       />
