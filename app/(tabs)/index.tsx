@@ -1,11 +1,14 @@
 import { useTheme } from '@/context/ThemeContext';
+import { useFocusEffect } from '@react-navigation/native';
 import { useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { Camera as CameraIcon, FileText, Image as ImageIcon } from 'lucide-react-native';
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Animated,
+  Easing,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -14,9 +17,153 @@ import {
   View
 } from 'react-native';
 
+const AnimatedCard = ({
+  children,
+  animation,
+  delay = 0,
+  style
+}: {
+  children: React.ReactNode;
+  animation: Animated.Value;
+  delay?: number;
+  style?: any;
+}) => {
+  const cardStyle = {
+    opacity: animation,
+    transform: [{
+      translateY: animation.interpolate({
+        inputRange: [0, 1],
+        outputRange: [20, 0], // Ultra minimal: was 30px
+      }),
+    }, {
+      scale: animation.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0.98, 1], // Ultra subtle: was 0.97
+      }),
+    }],
+  };
+
+  return (
+    <Animated.View style={[cardStyle, style]}>
+      {children}
+    </Animated.View>
+  );
+};
+
 export default function HomeScreen() {
   const { colors } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // ScrollView ref to control scroll position
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Animation values
+  const headerFadeAnim = useRef(new Animated.Value(0)).current;
+  const headerSlideAnim = useRef(new Animated.Value(-30)).current;
+  const contentFadeAnim = useRef(new Animated.Value(0)).current;
+  const contentSlideAnim = useRef(new Animated.Value(50)).current;
+
+  // Staggered animations for cards
+  const cameraCardAnim = useRef(new Animated.Value(0)).current;
+  const galleryCardAnim = useRef(new Animated.Value(0)).current;
+  const pdfCardAnim = useRef(new Animated.Value(0)).current;
+
+  // Initialize animations when component mounts
+  useEffect(() => {
+    // Ensure ScrollView is at the top when component mounts
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ x: 0, y: 0, animated: false });
+    }
+
+    // Start header animation immediately - ultra fast
+    Animated.parallel([
+      Animated.timing(headerFadeAnim, {
+        toValue: 1,
+        duration: 300, // Ultra fast: was 400ms
+        useNativeDriver: true,
+        easing: Easing.out(Easing.cubic),
+      }),
+      Animated.timing(headerSlideAnim, {
+        toValue: 0,
+        duration: 350, // Ultra fast: was 500ms
+        useNativeDriver: true,
+        easing: Easing.out(Easing.cubic),
+      }),
+    ]).start();
+
+    // Start content animation with minimal delay
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(contentFadeAnim, {
+          toValue: 1,
+          duration: 250, // Ultra fast: was 350ms
+          useNativeDriver: true,
+          easing: Easing.out(Easing.cubic),
+        }),
+        Animated.timing(contentSlideAnim, {
+          toValue: 0,
+          duration: 300, // Ultra fast: was 400ms
+          useNativeDriver: true,
+          easing: Easing.out(Easing.cubic),
+        }),
+      ]).start(() => {
+        // Start staggered card animations after content is visible
+        setHasInitialized(true);
+        startCardAnimations();
+      });
+    }, 100); // Minimal delay: was 150ms
+  }, []);
+
+  // Ensure scroll position is reset when component mounts
+  useEffect(() => {
+    // Use setTimeout to ensure the ScrollView is fully rendered
+    const timer = setTimeout(() => {
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ x: 0, y: 0, animated: false });
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Reset scroll position when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      // Small delay to ensure navigation is complete
+      const timer = setTimeout(() => {
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollTo({ x: 0, y: 0, animated: false });
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }, [])
+  );
+
+  const startCardAnimations = () => {
+    // Ultra-fast staggered entrance for each card
+    Animated.stagger(80, [ // Ultra fast stagger: was 100ms
+      Animated.timing(cameraCardAnim, {
+        toValue: 1,
+        duration: 250, // Ultra fast: was 350ms
+        useNativeDriver: true,
+        easing: Easing.out(Easing.cubic),
+      }),
+      Animated.timing(galleryCardAnim, {
+        toValue: 1,
+        duration: 250, // Ultra fast: was 350ms
+        useNativeDriver: true,
+        easing: Easing.out(Easing.cubic),
+      }),
+      Animated.timing(pdfCardAnim, {
+        toValue: 1,
+        duration: 250, // Ultra fast: was 350ms
+        useNativeDriver: true,
+        easing: Easing.out(Easing.cubic),
+      }),
+    ]).start();
+  };
 
   const openCamera = async () => {
     if (!permission?.granted) {
@@ -177,17 +324,40 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={dynamicStyles.container}>
-      <ScrollView style={dynamicStyles.container} showsVerticalScrollIndicator={false}>
-        <View style={dynamicStyles.header}>
+      <ScrollView 
+        ref={scrollViewRef}
+        style={dynamicStyles.container} 
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View
+          style={[
+            dynamicStyles.header,
+            {
+              opacity: headerFadeAnim,
+              transform: [{ translateY: headerSlideAnim }],
+            },
+          ]}
+        >
           <Text style={dynamicStyles.headerTitle}>Document Scanner</Text>
           <Text style={dynamicStyles.headerSubtitle}>
             Scan documents, extract text, or convert images to PDF
           </Text>
-        </View>
+        </Animated.View>
 
-        <View style={styles.content}>
+        <Animated.View
+          style={[
+            styles.content,
+            {
+              opacity: contentFadeAnim,
+              transform: [{ translateY: contentSlideAnim }],
+            },
+          ]}
+        >
           {/* Camera Scan Option */}
-          <View style={dynamicStyles.scanOption}>
+          <AnimatedCard
+            animation={cameraCardAnim}
+            style={dynamicStyles.scanOption}
+          >
             <View style={styles.optionHeader}>
               <CameraIcon size={32} color={colors.tint} />
               <Text style={dynamicStyles.scanOptionTitle}>Scan with Camera</Text>
@@ -199,10 +369,13 @@ export default function HomeScreen() {
               <CameraIcon size={20} color="#fff" />
               <Text style={dynamicStyles.scanButtonText}>Open Camera</Text>
             </TouchableOpacity>
-          </View>
+          </AnimatedCard>
 
           {/* Gallery Scan Option */}
-          <View style={dynamicStyles.scanOption}>
+          <AnimatedCard
+            animation={galleryCardAnim}
+            style={dynamicStyles.scanOption}
+          >
             <View style={styles.optionHeader}>
               <ImageIcon size={32} color={colors.tint} />
               <Text style={dynamicStyles.scanOptionTitle}>Scan from Gallery</Text>
@@ -214,10 +387,13 @@ export default function HomeScreen() {
               <ImageIcon size={20} color={colors.tint} />
               <Text style={dynamicStyles.galleryButtonText}>Choose Photo</Text>
             </TouchableOpacity>
-          </View>
+          </AnimatedCard>
 
           {/* PDF Conversion Option */}
-          <View style={dynamicStyles.scanOption}>
+          <AnimatedCard
+            animation={pdfCardAnim}
+            style={dynamicStyles.scanOption}
+          >
             <View style={styles.optionHeader}>
               <FileText size={32} color={colors.tint} />
               <Text style={dynamicStyles.scanOptionTitle}>Convert to PDF</Text>
@@ -229,9 +405,9 @@ export default function HomeScreen() {
               <FileText size={20} color="#fff" />
               <Text style={dynamicStyles.pdfButtonText}>Create PDF</Text>
             </TouchableOpacity>
-          </View>
-          
-        </View>
+          </AnimatedCard>
+
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );

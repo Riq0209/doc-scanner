@@ -15,8 +15,8 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ 
       headerBackTitle: "Back",
-      animation: "none",
-      animationDuration: 300
+      animation: "fade",
+      animationDuration: 0
     }}>
       <Stack.Screen 
         name="login" 
