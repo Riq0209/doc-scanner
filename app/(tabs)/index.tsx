@@ -249,7 +249,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.quickActionButton, { backgroundColor: colors.background, borderColor: colors.border }]} 
-                onPress={() => router.push('/settings')}
+                onPress={() => router.push('/profile')}
               >
                 <Text style={[styles.quickActionText, { color: colors.text }]}>Settings</Text>
               </TouchableOpacity>

@@ -1,9 +1,11 @@
+import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import AuthWrapper from "../components/AuthWrapper";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -16,6 +18,16 @@ function RootLayoutNav() {
       animation: "slide_from_right",
       animationDuration: 300
     }}>
+      <Stack.Screen 
+        name="login" 
+        options={{ 
+          headerShown: false,
+          presentation: "fullScreenModal",
+          animation: "slide_from_bottom",
+          animationDuration: 400
+        }} 
+      />
+      <Stack.Screen name="auth" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen 
         name="camera-scan" 
@@ -55,6 +67,15 @@ function RootLayoutNav() {
           animationDuration: 300
         }} 
       />
+      <Stack.Screen 
+        name="pdf-success" 
+        options={{ 
+          headerShown: false,
+          presentation: "card",
+          animation: "slide_from_right",
+          animationDuration: 300
+        }} 
+      />
     </Stack>
   );
 }
@@ -67,9 +88,13 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <RootLayoutNav />
-        </GestureHandlerRootView>
+        <AuthProvider>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <AuthWrapper>
+              <RootLayoutNav />
+            </AuthWrapper>
+          </GestureHandlerRootView>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

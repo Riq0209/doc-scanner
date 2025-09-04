@@ -1,9 +1,11 @@
+import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DatabaseService } from '@/lib/database';
+import type { PDFHistory, ScanHistory } from '@/lib/supabase';
 import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Calendar, FileText, Trash2 } from 'lucide-react-native';
+import { Calendar, FileText, Trash2, User } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
@@ -16,29 +18,31 @@ import {
     View,
 } from 'react-native';
 
-type ScanHistoryItem = {
-  id: string;
-  imageUri: string;
-  extractedText: string;
-  timestamp: number;
-  preview: string;
-};
+type HistoryItem = (ScanHistory & { type: 'scan' }) | (PDFHistory & { type: 'pdf' });
 
 export default function HistoryScreen() {
   const { colors } = useTheme();
-  const [history, setHistory] = useState<ScanHistoryItem[]>([]);
+  const { user, isGuest } = useAuth();
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadHistory();
-  }, []);
+    if (!isGuest && user) {
+      loadHistory();
+    } else {
+      setIsLoading(false);
+    }
+  }, [user, isGuest]);
 
   const loadHistory = async () => {
     try {
-      const stored = await AsyncStorage.getItem('scan_history');
-      if (stored) {
-        const parsedHistory = JSON.parse(stored);
-        setHistory(parsedHistory.sort((a: ScanHistoryItem, b: ScanHistoryItem) => b.timestamp - a.timestamp));
+      // Load all history from Supabase
+      const result = await DatabaseService.getAllHistory(50);
+      
+      if (result.success && result.data) {
+        setHistory(result.data);
+      } else {
+        console.error('Failed to load history:', result.error);
       }
     } catch (error) {
       console.error('Failed to load history:', error);
@@ -47,19 +51,30 @@ export default function HistoryScreen() {
     }
   };
 
-  const deleteItem = async (id: string) => {
+  const deleteItem = async (id: string, type: 'scan' | 'pdf') => {
     Alert.alert(
-      'Delete Scan',
-      'Are you sure you want to delete this scan?',
+      type === 'scan' ? 'Delete Scan' : 'Delete PDF',
+      `Are you sure you want to delete this ${type}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            const updatedHistory = history.filter(item => item.id !== id);
-            setHistory(updatedHistory);
-            await AsyncStorage.setItem('scan_history', JSON.stringify(updatedHistory));
+            try {
+              const result = type === 'scan' 
+                ? await DatabaseService.deleteScan(id)
+                : await DatabaseService.deletePDF(id);
+              
+              if (result.success) {
+                setHistory(prev => prev.filter(item => item.id !== id));
+              } else {
+                Alert.alert('Error', 'Failed to delete item');
+              }
+            } catch (error) {
+              console.error('Error deleting item:', error);
+              Alert.alert('Error', 'Failed to delete item');
+            }
           },
         },
       ]
@@ -74,22 +89,31 @@ export default function HistoryScreen() {
   const clearAllHistory = async () => {
     Alert.alert(
       'Clear All History',
-      'Are you sure you want to delete all scans? This action cannot be undone.',
+      'Are you sure you want to delete all scans and PDFs? This action cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Clear All',
           style: 'destructive',
           onPress: async () => {
-            setHistory([]);
-            await AsyncStorage.removeItem('scan_history');
+            try {
+              const result = await DatabaseService.clearAllHistory();
+              if (result.success) {
+                setHistory([]);
+              } else {
+                Alert.alert('Error', 'Failed to clear history');
+              }
+            } catch (error) {
+              console.error('Error clearing history:', error);
+              Alert.alert('Error', 'Failed to clear history');
+            }
           },
         },
       ]
     );
   };
 
-  const formatDate = (timestamp: number) => {
+  const formatDate = (timestamp: string | number) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
@@ -106,55 +130,110 @@ export default function HistoryScreen() {
     }
   };
 
-  const renderHistoryItem = ({ item }: { item: ScanHistoryItem }) => (
-    <TouchableOpacity
-      style={[styles.historyItem, { backgroundColor: colors.background }]}
-      onPress={() => {
-        router.push({
-          pathname: '/scan-result',
-          params: {
-            imageUri: item.imageUri,
-            imageBase64: '', // We don't store base64 in history to save space
-            extractedText: item.extractedText,
-            fromHistory: 'true'
-          }
-        });
-      }}
-    >
-      <Image source={{ uri: item.imageUri }} style={styles.thumbnail} contentFit="cover" />
-      <View style={styles.itemContent}>
-        <Text style={[styles.previewText, { color: colors.text }]} numberOfLines={2}>
-          {item.preview || 'No text detected'}
-        </Text>
-        <View style={styles.itemFooter}>
-          <View style={styles.dateContainer}>
-            <Calendar size={12} color={colors.tabIconDefault} />
-            <Text style={[styles.dateText, { color: colors.tabIconDefault }]}>{formatDate(item.timestamp)}</Text>
+  const renderHistoryItem = ({ item }: { item: HistoryItem }) => {
+    if (item.type === 'scan') {
+      return (
+        <TouchableOpacity
+          style={[styles.historyItem, { backgroundColor: colors.background }]}
+          onPress={() => {
+            router.push({
+              pathname: '/scan-result',
+              params: {
+                imageUri: item.image_url,
+                imageBase64: '', // We don't store base64 in history to save space
+                extractedText: item.extracted_text || '',
+                fromHistory: 'true'
+              }
+            });
+          }}
+        >
+          <Image source={{ uri: item.image_url }} style={styles.thumbnail} contentFit="cover" />
+          <View style={styles.itemContent}>
+            <Text style={[styles.previewText, { color: colors.text }]} numberOfLines={2}>
+              {item.preview || 'No text detected'}
+            </Text>
+            <View style={styles.itemFooter}>
+              <View style={styles.dateContainer}>
+                <Calendar size={12} color={colors.tabIconDefault} />
+                <Text style={[styles.dateText, { color: colors.tabIconDefault }]}>{formatDate(item.created_at)}</Text>
+              </View>
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    copyText(item.extracted_text || '');
+                  }}
+                >
+                  <FileText size={16} color="#007AFF" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    deleteItem(item.id, 'scan');
+                  }}
+                >
+                  <Trash2 size={16} color="#FF3B30" />
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-          <View style={styles.actions}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                copyText(item.extractedText);
-              }}
-            >
-              <FileText size={16} color="#007AFF" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                deleteItem(item.id);
-              }}
-            >
-              <Trash2 size={16} color="#FF3B30" />
-            </TouchableOpacity>
+        </TouchableOpacity>
+      );
+    } else {
+      // PDF item
+      return (
+        <TouchableOpacity
+          style={[styles.historyItem, { backgroundColor: colors.background }]}
+          onPress={() => {
+            // Navigate to PDF success page or open PDF
+            router.push({
+              pathname: '/pdf-success',
+              params: {
+                pdfUri: item.pdf_url,
+                pdfTitle: item.title,
+                selectedImages: JSON.stringify([]) // Empty for history items
+              }
+            });
+          }}
+        >
+          {item.thumbnail_url ? (
+            <Image source={{ uri: item.thumbnail_url }} style={styles.thumbnail} contentFit="cover" />
+          ) : (
+            <View style={[styles.thumbnail, styles.pdfThumbnail, { backgroundColor: colors.border }]}>
+              <FileText size={24} color="#007AFF" />
+            </View>
+          )}
+          <View style={styles.itemContent}>
+            <Text style={[styles.previewText, { color: colors.text }]} numberOfLines={2}>
+              {item.title}
+            </Text>
+            <Text style={[styles.pdfInfo, { color: colors.tabIconDefault }]} numberOfLines={1}>
+              PDF • {item.page_count} page{item.page_count === 1 ? '' : 's'}
+            </Text>
+            <View style={styles.itemFooter}>
+              <View style={styles.dateContainer}>
+                <Calendar size={12} color={colors.tabIconDefault} />
+                <Text style={[styles.dateText, { color: colors.tabIconDefault }]}>{formatDate(item.created_at)}</Text>
+              </View>
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    deleteItem(item.id, 'pdf');
+                  }}
+                >
+                  <Trash2 size={16} color="#FF3B30" />
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+        </TouchableOpacity>
+      );
+    }
+  };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
@@ -172,6 +251,39 @@ export default function HistoryScreen() {
     </View>
   );
 
+  const handleSignInPress = () => {
+    try {
+      console.log('🔐 Guest user wants to sign in from history tab');
+      console.log('🔐 Clearing guest mode and returning to login...');
+      
+      // Clear guest mode and navigate back to login - just like app startup
+      router.replace('/login');
+      
+      console.log('🔐 Navigation to login completed');
+    } catch (error) {
+      console.error('🔐 Navigation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      Alert.alert('Navigation Error', `Failed to open login: ${errorMessage}`);
+    }
+  };
+
+  const renderGuestState = () => (
+    <View style={styles.emptyState}>
+      <User size={64} color={colors.tabIconDefault} />
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>Sign In Required</Text>
+      <Text style={[styles.emptyText, { color: colors.tabIconDefault }]}>
+        To view your scan history and sync across devices, please sign in to your account.
+      </Text>
+      <TouchableOpacity
+        style={[styles.signInButton, { backgroundColor: colors.tint }]}
+        onPress={handleSignInPress}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.signInButtonText}>Sign In</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
@@ -179,14 +291,16 @@ export default function HistoryScreen() {
           <FileText size={24} color="#007AFF" />
           <Text style={[styles.headerTitle, { color: colors.text }]}>Scan History</Text>
         </View>
-        {history.length > 0 && (
+        {!isGuest && history.length > 0 && (
           <TouchableOpacity style={styles.clearButton} onPress={clearAllHistory}>
             <Text style={styles.clearButtonText}>Clear All</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {history.length === 0 ? (
+      {isGuest ? (
+        renderGuestState()
+      ) : history.length === 0 ? (
         renderEmptyState()
       ) : (
         <FlatList
@@ -259,6 +373,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#f0f0f0',
   },
+  pdfThumbnail: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   itemContent: {
     flex: 1,
     marginLeft: 12,
@@ -266,6 +384,10 @@ const styles = StyleSheet.create({
   previewText: {
     fontSize: 16,
     lineHeight: 22,
+    marginBottom: 8,
+  },
+  pdfInfo: {
+    fontSize: 12,
     marginBottom: 8,
   },
   itemFooter: {
@@ -311,8 +433,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 12,
+    marginTop: 16,
   },
   scanButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  signInButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  signInButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',

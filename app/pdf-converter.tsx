@@ -1,16 +1,15 @@
 import { useTheme } from '@/context/ThemeContext';
 import * as FileSystem from 'expo-file-system';
+import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as Print from 'expo-print';
 import { router } from 'expo-router';
-import * as Sharing from 'expo-sharing';
 import {
     ArrowLeft,
     Eye,
     FileText,
     Plus,
     Settings,
-    Share2 as Share,
     Trash2
 } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -32,7 +31,7 @@ import {
 
 interface SelectedImage {
   uri: string;
-  base64?: string; // Add base64 property
+  base64?: string;
   width: number;
   height: number;
   id: string;
@@ -54,8 +53,6 @@ export default function PDFConverterScreen() {
   const [conversionProgress, setConversionProgress] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
-  const [showPDFPreview, setShowPDFPreview] = useState(false);
-  const [generatedPDFUri, setGeneratedPDFUri] = useState<string | null>(null);
   const [pdfSettings, setPdfSettings] = useState<PDFSettings>({
     title: `Document_${new Date().toLocaleDateString().replace(/\//g, '-')}`,
     quality: 'high',
@@ -64,19 +61,21 @@ export default function PDFConverterScreen() {
   });
 
   const addImages = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: 'images',
         allowsEditing: false,
-        quality: 1.0, // Maximum quality for HD output
+        quality: 1.0,
         allowsMultipleSelection: true,
-        base64: true, // Enable base64 for PDF embedding
+        base64: true,
       });
 
       if (!result.canceled && result.assets) {
         const newImages: SelectedImage[] = result.assets.map((asset, index) => ({
           uri: asset.uri,
-          base64: asset.base64 || undefined, // Handle null case
+          base64: asset.base64 || undefined,
           width: asset.width || 0,
           height: asset.height || 0,
           id: `img_${Date.now()}_${index}`
@@ -103,22 +102,12 @@ export default function PDFConverterScreen() {
     setSelectedImages(newImages);
   };
 
-  const getQualityValue = (quality: string) => {
-    switch (quality) {
-      case 'low': return 0.5;      // Increased from 0.3
-      case 'medium': return 0.8;   // Increased from 0.7  
-      case 'high': return 1.0;     // Maximum quality
-      default: return 0.8;
-    }
-  };
-
   const convertUriToBase64 = async (uri: string): Promise<string> => {
     try {
       const base64 = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
       
-      // Detect image format from URI or default to jpeg
       let mimeType = 'image/jpeg';
       if (uri.toLowerCase().includes('.png')) {
         mimeType = 'image/png';
@@ -129,7 +118,7 @@ export default function PDFConverterScreen() {
       return `data:${mimeType};base64,${base64}`;
     } catch (error) {
       console.error('Error converting URI to base64:', error);
-      return uri; // Fallback to original URI
+      return uri;
     }
   };
 
@@ -139,18 +128,17 @@ export default function PDFConverterScreen() {
       return;
     }
 
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setIsConverting(true);
     
     try {
       setConversionProgress('Processing images...');
       
-      // Convert all images to base64 if needed
       const processedImages = await Promise.all(
         selectedImages.map(async (image, index) => {
           setConversionProgress(`Converting image ${index + 1} of ${selectedImages.length}...`);
           
           if (image.base64) {
-            // Detect image format from URI for proper MIME type
             let mimeType = 'image/jpeg';
             if (image.uri.toLowerCase().includes('.png')) {
               mimeType = 'image/png';
@@ -166,7 +154,6 @@ export default function PDFConverterScreen() {
 
       setConversionProgress('Generating PDF...');
 
-      // Create optimized HTML content
       const pageStyle = pdfSettings.orientation === 'landscape' 
         ? 'width: 297mm; height: 210mm;' 
         : 'width: 210mm; height: 297mm;';
@@ -180,65 +167,62 @@ export default function PDFConverterScreen() {
               @page {
                 margin: 0;
                 padding: 0;
-                size: ${pdfSettings.pageSize === 'A4' ? 'A4' : 'Letter'} ${pdfSettings.orientation};
+                size: A4 portrait;
               }
               * {
+                margin: 0;
+                padding: 0;
                 box-sizing: border-box;
               }
               html, body {
-                margin: 0;
-                padding: 0;
-                font-family: 'Helvetica', Arial, sans-serif;
                 width: 100%;
                 height: 100%;
-                overflow: hidden;
+                margin: 0;
+                padding: 0;
               }
               .page {
-                page-break-after: always;
-                page-break-inside: avoid;
                 width: 100%;
-                height: ${pdfSettings.pageSize === 'A4' ? (pdfSettings.orientation === 'landscape' ? '210mm' : '297mm') : (pdfSettings.orientation === 'landscape' ? '216mm' : '279mm')};
-                display: table-cell;
-                vertical-align: middle;
-                text-align: center;
-                padding: 10mm;
-                overflow: hidden;
+                height: 100vh;
+                page-break-after: always;
                 position: relative;
+                padding: 0;
+                margin: 0;
               }
               .page:last-child {
                 page-break-after: avoid;
               }
-              .image-container {
+              .image-cell {
+                position: absolute;
+                top: 0;
+                left: 0;
                 width: 100%;
                 height: 100%;
-                display: inline-block;
-                text-align: center;
-                vertical-align: middle;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
               }
               img {
-                max-width: 100%;
-                max-height: calc(${pdfSettings.pageSize === 'A4' ? (pdfSettings.orientation === 'landscape' ? '190mm' : '277mm') : (pdfSettings.orientation === 'landscape' ? '196mm' : '259mm')});
+                max-width: none;
+                max-height: none;
                 width: auto;
                 height: auto;
+                min-height: 80%;
+                min-width: 65.35%;
+                display: block;
+                margin: auto;
                 object-fit: contain;
-                object-position: center;
-                image-rendering: -webkit-optimize-contrast;
-                image-rendering: crisp-edges;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-                display: inline-block;
-                vertical-align: middle;
+                object-position: center center;
               }
             </style>
           </head>
           <body>
       `;
 
-      // Add each processed image as a page - one image per page
       processedImages.forEach((imageSource, index) => {
         htmlContent += `
           <div class="page">
-            <div class="image-container">
+            <div class="image-cell">
               <img src="${imageSource}" alt="Page ${index + 1}" />
             </div>
           </div>
@@ -250,13 +234,12 @@ export default function PDFConverterScreen() {
         </html>
       `;
 
-      // Generate PDF with optimized settings for full-page images
       const pdfWidth = pdfSettings.pageSize === 'A4' ? 595 : 612;
       const pdfHeight = pdfSettings.pageSize === 'A4' ? 842 : 792;
       
-      // Scale up for higher resolution (2x for HD quality)
-      const scaleFactor = pdfSettings.quality === 'high' ? 2 : 
-                         pdfSettings.quality === 'medium' ? 1.5 : 1;
+      // Optimized scale factors for iPhone/iOS
+      const scaleFactor = pdfSettings.quality === 'high' ? 3 : 
+                         pdfSettings.quality === 'medium' ? 2.5 : 2;
       
       const { uri } = await Print.printToFileAsync({
         html: htmlContent,
@@ -273,8 +256,16 @@ export default function PDFConverterScreen() {
 
       setIsConverting(false);
       setConversionProgress('');
-      setGeneratedPDFUri(uri);
-      setShowPDFPreview(true);
+      
+      // Navigate to success page with PDF data
+      router.push({
+        pathname: '/pdf-success',
+        params: {
+          pdfUri: uri,
+          pdfTitle: pdfSettings.title,
+          selectedImages: JSON.stringify(selectedImages)
+        }
+      });
 
     } catch (error) {
       console.error('PDF generation error:', error);
@@ -284,100 +275,48 @@ export default function PDFConverterScreen() {
     }
   };
 
-  const sharePDF = async (uri: string) => {
-    try {
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, {
-          mimeType: 'application/pdf',
-          dialogTitle: `Share ${pdfSettings.title}`,
-          UTI: 'com.adobe.pdf'
-        });
-      } else {
-        Alert.alert('Sharing not available', 'PDF saved to device but sharing is not available on this platform.');
-      }
-    } catch (error) {
-      console.error('Sharing error:', error);
-      Alert.alert('Error', 'Failed to share PDF');
-    }
-  };
-
-  const saveToHistory = async (pdfUri: string) => {
-    try {
-      // Here you would typically save to AsyncStorage or your preferred storage
-      // For now, we'll show a success message
-      Alert.alert(
-        'Saved to History! ✅',
-        `"${pdfSettings.title}" has been saved to your scan history.`,
-        [
-          {
-            text: 'View History',
-            onPress: () => {
-              setShowPDFPreview(false);
-              router.push('/history');
-            }
-          },
-          {
-            text: 'OK',
-            onPress: () => setShowPDFPreview(false)
-          }
-        ]
-      );
-    } catch (error) {
-      console.error('Error saving to history:', error);
-      Alert.alert('Error', 'Failed to save to history');
-    }
-  };
-
-  const createNewPDF = () => {
-    setSelectedImages([]);
-    setGeneratedPDFUri(null);
-    setShowPDFPreview(false);
-    setPdfSettings(prev => ({
-      ...prev,
-      title: `Document_${new Date().toLocaleDateString().replace(/\//g, '-')}`
-    }));
-  };
-
   const renderImageItem = ({ item, index }: { item: SelectedImage; index: number }) => (
     <View style={[styles.imageItem, { borderColor: colors.border }]}>
       <Image source={{ uri: item.uri }} style={styles.imagePreview} />
       
-      <View style={styles.imageControls}>
-        <Text style={[styles.pageNumber, { color: colors.text }]}>Page {index + 1}</Text>
+      {/* Page Number - Bottom Left */}
+      <View style={styles.pageNumberContainer}>
+        <Text style={styles.pageNumberText}>Page {index + 1}</Text>
+      </View>
+      
+      {/* Floating Action Buttons - Top Right */}
+      <View style={styles.floatingActions}>
+        <TouchableOpacity
+          style={[styles.floatingButton, { backgroundColor: 'rgba(0,122,255,0.9)' }]}
+          onPress={() => setPreviewUri(item.uri)}
+        >
+          <Eye size={16} color="#fff" />
+        </TouchableOpacity>
         
-        <View style={styles.imageActions}>
+        {index > 0 && (
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.background }]}
-            onPress={() => setPreviewUri(item.uri)}
+            style={[styles.floatingButton, { backgroundColor: 'rgba(52,199,89,0.9)' }]}
+            onPress={() => moveImage(index, index - 1)}
           >
-            <Eye size={16} color={colors.tint} />
+            <Text style={[styles.moveButton, { color: '#fff' }]}>↑</Text>
           </TouchableOpacity>
-          
-          {index > 0 && (
-            <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: colors.background }]}
-              onPress={() => moveImage(index, index - 1)}
-            >
-              <Text style={[styles.moveButton, { color: colors.tint }]}>↑</Text>
-            </TouchableOpacity>
-          )}
-          
-          {index < selectedImages.length - 1 && (
-            <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: colors.background }]}
-              onPress={() => moveImage(index, index + 1)}
-            >
-              <Text style={[styles.moveButton, { color: colors.tint }]}>↓</Text>
-            </TouchableOpacity>
-          )}
-          
+        )}
+        
+        {index < selectedImages.length - 1 && (
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: '#ff4444' }]}
-            onPress={() => removeImage(item.id)}
+            style={[styles.floatingButton, { backgroundColor: 'rgba(52,199,89,0.9)' }]}
+            onPress={() => moveImage(index, index + 1)}
           >
-            <Trash2 size={16} color="#fff" />
+            <Text style={[styles.moveButton, { color: '#fff' }]}>↓</Text>
           </TouchableOpacity>
-        </View>
+        )}
+        
+        <TouchableOpacity
+          style={[styles.floatingButton, { backgroundColor: 'rgba(255,68,68,0.9)' }]}
+          onPress={() => removeImage(item.id)}
+        >
+          <Trash2 size={16} color="#fff" />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -487,7 +426,11 @@ export default function PDFConverterScreen() {
       )}
 
       <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-        <TouchableOpacity style={dynamicStyles.addButton} onPress={addImages}>
+        <TouchableOpacity 
+          style={dynamicStyles.addButton} 
+          onPress={addImages}
+          activeOpacity={0.8}
+        >
           <Plus size={20} color="#fff" />
           <Text style={dynamicStyles.addButtonText}>
             {selectedImages.length === 0 ? 'Select Images' : 'Add More Images'}
@@ -501,6 +444,7 @@ export default function PDFConverterScreen() {
           ]}
           onPress={generatePDF}
           disabled={selectedImages.length === 0 || isConverting}
+          activeOpacity={0.8}
         >
           {isConverting ? (
             <ActivityIndicator size="small" color="#fff" />
@@ -622,144 +566,29 @@ export default function PDFConverterScreen() {
         </SafeAreaView>
       </Modal>
 
-      {/* Image Preview Modal */}
+      {/* Preview Modal */}
       <Modal
         visible={!!previewUri}
         animationType="fade"
+        transparent={true}
         onRequestClose={() => setPreviewUri(null)}
       >
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }}>
-          <View style={styles.previewHeader}>
-            <TouchableOpacity onPress={() => setPreviewUri(null)}>
-              <ArrowLeft size={24} color="#fff" />
-            </TouchableOpacity>
-            <Text style={styles.previewTitle}>Image Preview</Text>
-            <View style={{ width: 24 }} />
-          </View>
+        <View style={styles.previewOverlay}>
+          <TouchableOpacity 
+            style={styles.previewCloseButton}
+            onPress={() => setPreviewUri(null)}
+          >
+            <Text style={styles.previewCloseText}>✕</Text>
+          </TouchableOpacity>
           
           {previewUri && (
             <Image 
               source={{ uri: previewUri }} 
-              style={{ flex: 1 }} 
-              resizeMode="contain" 
+              style={styles.previewImageLarge}
+              resizeMode="contain"
             />
           )}
-        </SafeAreaView>
-      </Modal>
-
-      {/* PDF Preview & Action Modal */}
-      <Modal
-        visible={showPDFPreview}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowPDFPreview(false)}
-      >
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-          <View style={[dynamicStyles.header, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
-            <TouchableOpacity onPress={() => setShowPDFPreview(false)}>
-              <ArrowLeft size={24} color={colors.text} />
-            </TouchableOpacity>
-            <Text style={dynamicStyles.headerTitle}>PDF Generated Successfully!</Text>
-            <View style={{ width: 24 }} />
-          </View>
-
-          <ScrollView style={{ flex: 1, padding: 20 }}>
-            {/* PDF Info Section */}
-            <View style={[styles.pdfInfoCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <View style={styles.pdfInfoHeader}>
-                <FileText size={48} color={colors.tint} />
-                <View style={{ flex: 1, marginLeft: 16 }}>
-                  <Text style={[styles.pdfTitle, { color: colors.text }]}>{pdfSettings.title}</Text>
-                  <Text style={[styles.pdfDetails, { color: colors.tabIconDefault }]}>
-                    {selectedImages.length} {selectedImages.length === 1 ? 'page' : 'pages'} • {pdfSettings.quality.toUpperCase()} quality
-                  </Text>
-                  <Text style={[styles.pdfDetails, { color: colors.tabIconDefault }]}>
-                    {pdfSettings.pageSize} {pdfSettings.orientation}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Actions Section */}
-            <View style={styles.actionsSection}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>What would you like to do?</Text>
-              
-              <TouchableOpacity 
-                style={[styles.actionCard, { backgroundColor: colors.tint }]}
-                onPress={() => generatedPDFUri && saveToHistory(generatedPDFUri)}
-              >
-                <View style={styles.actionContent}>
-                  <View style={styles.actionIcon}>
-                    <FileText size={24} color="#fff" />
-                  </View>
-                  <View style={styles.actionText}>
-                    <Text style={styles.actionTitle}>Save to History</Text>
-                    <Text style={styles.actionDescription}>
-                      Add this PDF to your scan history for easy access later
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[styles.actionCard, { backgroundColor: '#34D399', marginTop: 12 }]}
-                onPress={() => generatedPDFUri && sharePDF(generatedPDFUri)}
-              >
-                <View style={styles.actionContent}>
-                  <View style={styles.actionIcon}>
-                    <Share size={24} color="#fff" />
-                  </View>
-                  <View style={styles.actionText}>
-                    <Text style={styles.actionTitle}>Share PDF</Text>
-                    <Text style={styles.actionDescription}>
-                      Save to Files, share via email, or send to other apps
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[styles.actionCard, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border, marginTop: 12 }]}
-                onPress={createNewPDF}
-              >
-                <View style={styles.actionContent}>
-                  <View style={[styles.actionIcon, { backgroundColor: colors.background }]}>
-                    <Plus size={24} color={colors.tint} />
-                  </View>
-                  <View style={styles.actionText}>
-                    <Text style={[styles.actionTitle, { color: colors.text }]}>Create Another PDF</Text>
-                    <Text style={[styles.actionDescription, { color: colors.tabIconDefault }]}>
-                      Start over with new images
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            {/* Preview Section */}
-            <View style={styles.previewSection}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Preview Images</Text>
-              <View style={styles.imageGrid}>
-                {selectedImages.slice(0, 6).map((image, index) => (
-                  <View 
-                    key={image.id} 
-                    style={styles.previewImageContainer}
-                  >
-                    <Image source={{ uri: image.uri }} style={styles.previewImage} />
-                    <Text style={[styles.pageLabel, { color: colors.text }]}>{index + 1}</Text>
-                  </View>
-                ))}
-                {selectedImages.length > 6 && (
-                  <View style={[styles.previewImageContainer, styles.moreImagesContainer]}>
-                    <Text style={[styles.moreImagesText, { color: colors.tabIconDefault }]}>
-                      +{selectedImages.length - 6} more
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -769,28 +598,61 @@ const styles = StyleSheet.create({
   imageItem: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    marginBottom: 16,
-    padding: 12,
     borderWidth: 1,
+    marginBottom: 16,
+    overflow: 'hidden',
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
   },
   imagePreview: {
     width: '100%',
     height: 200,
-    borderRadius: 8,
-    marginBottom: 12,
+    resizeMode: 'cover',
+  },
+  pageNumberContainer: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  pageNumberText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  floatingActions: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'column',
+    gap: 6,
+  },
+  floatingButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
   },
   imageControls: {
+    padding: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   pageNumber: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   imageActions: {
@@ -814,26 +676,24 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   textInput: {
     borderWidth: 1,
     borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    padding: 12,
     fontSize: 16,
   },
   optionButtons: {
     flexDirection: 'row',
     gap: 8,
+    flexWrap: 'wrap',
   },
   optionButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
     borderWidth: 1,
     borderRadius: 8,
-    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   optionButtonText: {
     fontSize: 14,
@@ -841,130 +701,34 @@ const styles = StyleSheet.create({
   },
   qualityDescription: {
     fontSize: 12,
-    marginTop: 8,
+    marginTop: 4,
     fontStyle: 'italic',
-    lineHeight: 16,
   },
-  previewHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-  },
-  previewTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  // PDF Preview Modal Styles
-  pdfInfoCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 24,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  pdfInfoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  pdfTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  pdfDetails: {
-    fontSize: 14,
-    marginBottom: 2,
-  },
-  actionsSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  actionCard: {
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  actionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  actionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  actionText: {
+  previewOverlay: {
     flex: 1,
-  },
-  actionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  actionDescription: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    lineHeight: 18,
-  },
-  previewSection: {
-    marginBottom: 20,
-  },
-  imageGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  previewImageContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  previewImage: {
-    width: '100%',
-    height: '100%',
-  },
-  pageLabel: {
-    position: 'absolute',
-    bottom: 4,
-    right: 4,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '600',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  moreImagesContainer: {
-    backgroundColor: '#f0f0f0',
-    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.9)',
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  moreImagesText: {
-    fontSize: 12,
-    fontWeight: '500',
+  previewCloseButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 1000,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewCloseText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  previewImageLarge: {
+    width: '90%',
+    height: '80%',
   },
 });

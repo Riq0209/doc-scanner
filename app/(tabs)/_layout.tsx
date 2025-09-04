@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { FileText, Home, Settings } from "lucide-react-native";
+import { FileText, Home, User } from "lucide-react-native";
 import React from "react";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -41,10 +41,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="profile"
         options={{
-          title: "Settings",
-          tabBarIcon: ({ color, size }) => <Settings color={color} size={size} />,
+          title: "Profile",
+          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
       />
     </Tabs>
