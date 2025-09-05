@@ -55,8 +55,9 @@ export default function HomeScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [hasInitialized, setHasInitialized] = useState(false);
 
-  // ScrollView ref to control scroll position
+  // ScrollView ref and scroll position
   const scrollViewRef = useRef<ScrollView>(null);
+  const scrollPositionRef = useRef(0);
 
   // Animation values
   const headerFadeAnim = useRef(new Animated.Value(0)).current;
@@ -127,17 +128,23 @@ export default function HomeScreen() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Reset scroll position when screen comes into focus
+  // Save scroll position on blur, restore on focus
   useFocusEffect(
     React.useCallback(() => {
-      // Small delay to ensure navigation is complete
+      // Restore scroll position when focused
       const timer = setTimeout(() => {
         if (scrollViewRef.current) {
-          scrollViewRef.current.scrollTo({ x: 0, y: 0, animated: false });
+          scrollViewRef.current.scrollTo({ x: 0, y: scrollPositionRef.current, animated: false });
         }
       }, 100);
 
-      return () => clearTimeout(timer);
+      return () => {
+        // Save scroll position when blurred
+        if (scrollViewRef.current) {
+          scrollViewRef.current.getScrollResponder()?.scrollResponderScrollNativeHandleToKeyboard;
+          scrollViewRef.current.scrollTo({ x: 0, y: scrollPositionRef.current, animated: false });
+        }
+      };
     }, [])
   );
 
@@ -324,10 +331,14 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={dynamicStyles.container}>
-      <ScrollView 
+      <ScrollView
         ref={scrollViewRef}
-        style={dynamicStyles.container} 
+        style={dynamicStyles.container}
         showsVerticalScrollIndicator={false}
+        onScroll={e => {
+          scrollPositionRef.current = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
       >
         <Animated.View
           style={[
