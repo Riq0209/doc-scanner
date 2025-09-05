@@ -3,17 +3,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-<<<<<<< HEAD
-<<<<<<< HEAD
-import { Camera as CameraIcon, FileText, Image as ImageIcon, Scan } from 'lucide-react-native';
-=======
-import { Camera as CameraIcon, FileText, Image as ImageIcon } from 'lucide-react-native';
->>>>>>> de075df89583d38d6804d69a1509670f7999158d
-import React from 'react';
-=======
 import { Camera as CameraIcon, FileText, Image as ImageIcon } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
->>>>>>> 9aadd63 (fix bug)
 import {
   Alert,
   Animated,
@@ -414,15 +405,9 @@ export default function HomeScreen() {
               <FileText size={20} color="#fff" />
               <Text style={dynamicStyles.pdfButtonText}>Create PDF</Text>
             </TouchableOpacity>
-<<<<<<< HEAD
-          </View>
-          
-        </View>
-=======
           </AnimatedCard>
 
         </Animated.View>
->>>>>>> 9aadd63 (fix bug)
       </ScrollView>
     </SafeAreaView>
   );
