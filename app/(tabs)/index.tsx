@@ -4,7 +4,11 @@ import { useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { Camera as CameraIcon, FileText, Image as ImageIcon, Scan } from 'lucide-react-native';
+=======
+import { Camera as CameraIcon, FileText, Image as ImageIcon } from 'lucide-react-native';
+>>>>>>> de075df89583d38d6804d69a1509670f7999158d
 import React from 'react';
 =======
 import { Camera as CameraIcon, FileText, Image as ImageIcon } from 'lucide-react-native';
@@ -412,31 +416,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
 <<<<<<< HEAD
           </View>
-
-          {/* Quick Stats or Recent Activity */}
-          <View style={[dynamicStyles.scanOption, { marginTop: 8 }]}>
-            <View style={styles.optionHeader}>
-              <Scan size={32} color={colors.tabIconDefault} />
-              <Text style={[dynamicStyles.scanOptionTitle, { color: colors.tabIconDefault }]}>Quick Access</Text>
-            </View>
-            <Text style={dynamicStyles.scanOptionDescription}>
-              Access your recently scanned documents or view scan history for easy retrieval.
-            </Text>
-            <View style={styles.quickActions}>
-              <TouchableOpacity 
-                style={[styles.quickActionButton, { backgroundColor: colors.background, borderColor: colors.border }]} 
-                onPress={() => router.push('/history')}
-              >
-                <Text style={[styles.quickActionText, { color: colors.text }]}>View History</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.quickActionButton, { backgroundColor: colors.background, borderColor: colors.border }]} 
-                onPress={() => router.push('/profile')}
-              >
-                <Text style={[styles.quickActionText, { color: colors.text }]}>Settings</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          
         </View>
 =======
           </AnimatedCard>

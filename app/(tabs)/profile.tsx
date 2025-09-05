@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import {
 <<<<<<< HEAD
+<<<<<<< HEAD
     Bell,
     Camera,
     ChevronRight,
@@ -20,6 +21,8 @@ import {
     User,
     UserCircle
 =======
+=======
+>>>>>>> de075df89583d38d6804d69a1509670f7999158d
   Bell,
   Camera,
   ChevronRight,
@@ -34,12 +37,17 @@ import {
   Sun,
   Trash2,
   User,
+<<<<<<< HEAD
   UserCircle,
   X
 >>>>>>> 9aadd63 (fix bug)
+=======
+  UserCircle
+>>>>>>> de075df89583d38d6804d69a1509670f7999158d
 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+<<<<<<< HEAD
 <<<<<<< HEAD
     Alert,
     Platform,
@@ -54,16 +62,24 @@ import {
   Alert,
   Image,
   Modal,
+=======
+  Alert,
+>>>>>>> de075df89583d38d6804d69a1509670f7999158d
   Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
+<<<<<<< HEAD
   TextInput,
   TouchableOpacity,
   View
 >>>>>>> 9aadd63 (fix bug)
+=======
+  TouchableOpacity,
+  View
+>>>>>>> de075df89583d38d6804d69a1509670f7999158d
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -633,7 +649,6 @@ export default function ProfileScreen() {
       justifyContent: 'space-between',
       paddingHorizontal: 16,
       paddingVertical: 16,
-      backgroundColor: colors.cardBackground,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
@@ -1240,6 +1255,7 @@ export default function ProfileScreen() {
           />
           <ProfileItem
 <<<<<<< HEAD
+<<<<<<< HEAD
             icon={<Globe size={20} color={colors.tint} />}
             title="Language"
             subtitle="English (US)"
@@ -1250,6 +1266,8 @@ export default function ProfileScreen() {
 =======
             key="haptic-feedback"
 >>>>>>> 9aadd63 (fix bug)
+=======
+>>>>>>> de075df89583d38d6804d69a1509670f7999158d
             icon={<Smartphone size={20} color={colors.warning} />}
             title="Haptic Feedback"
             subtitle="Vibrate on button presses"

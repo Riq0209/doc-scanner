@@ -71,6 +71,7 @@ export default function LoginScreen() {
       paddingVertical: 16,
       alignItems: 'center',
       marginBottom: 16,
+      marginLeft: 16, marginRight: 16,
     },
     loginButtonText: {
       fontSize: 16,
@@ -85,6 +86,7 @@ export default function LoginScreen() {
       paddingVertical: 16,
       alignItems: 'center',
       marginBottom: 24,
+      marginLeft: 16, marginRight: 16,
     },
     registerButtonText: {
       fontSize: 16,

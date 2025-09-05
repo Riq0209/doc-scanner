@@ -23,7 +23,7 @@ function RootLayoutNav() {
         options={{ 
           headerShown: false,
           presentation: "fullScreenModal",
-          animation: "slide_from_bottom",
+          animation: "none",
           animationDuration: 400
         }} 
       />

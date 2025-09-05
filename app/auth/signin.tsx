@@ -2,19 +2,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -198,20 +198,11 @@ export default function SignInScreen() {
 
   return (
     <SafeAreaView style={dynamicStyles.container}>
-      <View style={dynamicStyles.header}>
-        <TouchableOpacity
-          style={dynamicStyles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-      </View>
-
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <KeyboardAvoidingView 
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
           <ScrollView 
             style={{ flex: 1 }}
@@ -219,6 +210,14 @@ export default function SignInScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            <View style={dynamicStyles.header}>
+              <TouchableOpacity
+                style={dynamicStyles.backButton}
+                onPress={() => router.back()}
+              >
+                <Ionicons name="chevron-back" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
             <View style={dynamicStyles.content}>
           <Text style={dynamicStyles.title}>Welcome back!</Text>
           <Text style={dynamicStyles.subtitle}>Sign in to continue</Text>
