@@ -572,22 +572,6 @@ export default function HistoryScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <View style={styles.headerLeft}>
-          <FileText size={24} color="#007AFF" />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Scan History</Text>
-        </View>
-        {!isGuest && history.length > 0 && (
-          <TouchableOpacity
-            style={styles.clearButton}
-            onPress={clearAllHistory}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.clearButtonText}>Clear All</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
       {!isGuest && history.length > 0 && renderSearchBar()}
 
       {getContentToRender()}
@@ -598,34 +582,6 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  clearButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#FF3B30',
-    borderRadius: 8,
-  },
-  clearButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
   },
   searchContainer: {
     paddingHorizontal: 16,

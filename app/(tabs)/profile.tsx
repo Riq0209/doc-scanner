@@ -75,6 +75,7 @@ export default function ProfileScreen() {
   const [editingName, setEditingName] = useState<string>('');
   const [tempProfilePicture, setTempProfilePicture] = useState<string | null>(null);
   const [isRemovingPhoto, setIsRemovingPhoto] = useState(false);
+  const [showCustomAlert, setShowCustomAlert] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -595,20 +596,6 @@ export default function ProfileScreen() {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-    },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    headerTitle: {
-      fontSize: 20,
-      fontWeight: '600',
-      color: colors.text,
     },
     profileHeader: {
       backgroundColor: colors.cardBackground,
@@ -1149,17 +1136,65 @@ export default function ProfileScreen() {
       fontWeight: '500',
       textAlign: 'center',
     },
+    // Custom Alert styles
+    customAlertOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    customAlertContainer: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 16,
+      padding: 20,
+      margin: 20,
+      maxHeight: '70%',
+      width: '90%',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 5,
+        },
+      }),
+    },
+    customAlertTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 16,
+      textAlign: 'center',
+    },
+    customAlertContent: {
+      maxHeight: 200,
+    },
+    customAlertMessage: {
+      fontSize: 16,
+      color: colors.text,
+      lineHeight: 24,
+      textAlign: 'left',
+    },
+    customAlertButton: {
+      backgroundColor: colors.tint,
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      borderRadius: 12,
+      alignItems: 'center',
+      marginTop: 20,
+    },
+    customAlertButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.cardBackground,
+    },
   });
 
   return (
     <SafeAreaView style={dynamicStyles.container}>
-      <View style={dynamicStyles.header}>
-        <View style={styles.headerLeft}>
-          <User size={24} color={colors.tint} />
-          <Text style={dynamicStyles.headerTitle}>Profile</Text>
-        </View>
-      </View>
-
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <ProfileHeader />
 
@@ -1336,11 +1371,7 @@ export default function ProfileScreen() {
                 title="Why Sign In?"
                 subtitle="Access profile customization and cloud backup"
                 showChevron={true}
-                onPress={() => Alert.alert(
-                  'Benefits of Signing In',
-                  '✅ Personalize your profile with photo and name\n✅ Sync data across all your devices\n✅ Automatic cloud backup\n✅ Never lose your scans\n✅ Access history from anywhere\n✅ Enhanced security',
-                  [{ text: 'Got it!' }]
-                )}
+                onPress={() => setShowCustomAlert(true)}
                 isLast={true}
               />
             </View>
@@ -1579,16 +1610,41 @@ export default function ProfileScreen() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+
+      {/* Custom Alert Modal */}
+      <Modal
+        visible={showCustomAlert}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowCustomAlert(false)}
+      >
+        <View style={dynamicStyles.customAlertOverlay}>
+          <View style={dynamicStyles.customAlertContainer}>
+            <Text style={dynamicStyles.customAlertTitle}>Benefits of Signing In</Text>
+            <ScrollView style={dynamicStyles.customAlertContent}>
+              <Text style={dynamicStyles.customAlertMessage}>
+                ✅ Personalize your profile with photo and name{'\n'}
+                ✅ Sync data across all your devices{'\n'}
+                ✅ Automatic cloud backup{'\n'}
+                ✅ Never lose your scans{'\n'}
+                ✅ Access history from anywhere{'\n'}
+                ✅ Enhanced security
+              </Text>
+            </ScrollView>
+            <TouchableOpacity
+              style={dynamicStyles.customAlertButton}
+              onPress={() => setShowCustomAlert(false)}
+            >
+              <Text style={dynamicStyles.customAlertButtonText}>Got it!</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   content: {
     flex: 1,
   },
