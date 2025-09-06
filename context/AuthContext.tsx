@@ -92,6 +92,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('🔗 Redirect URL:', redirectUrl);
       console.log('🔗 Platform:', Platform.OS);
       console.log('🔗 Current origin:', Platform.OS === 'web' ? window.location.origin : 'N/A');
+      console.log('🔗 Full URL construction:', Platform.OS === 'web' ? `${window.location.origin}/auth/callback` : 'N/A');
 
       if (Platform.OS === 'web') {
         // Web version - use auth session with proper redirect
