@@ -10,28 +10,25 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        console.log('🔗 Auth callback received with params:', params);
+        console.log('🔗 Auth callback received');
         
-        // Extract tokens from URL parameters
-        const accessToken = params.access_token as string;
-        const refreshToken = params.refresh_token as string;
+        // For web OAuth, Supabase handles the session automatically
+        // Just check if we have a valid session
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (accessToken) {
-          console.log('✅ Setting session with tokens');
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken || '',
-          });
-          
-          if (error) {
-            console.error('❌ Error setting session:', error);
-          } else {
-            console.log('✅ Session set successfully');
-          }
+        if (error) {
+          console.error('❌ Error getting session:', error);
+          router.replace('/login');
+          return;
         }
         
-        // Redirect to the main app
-        router.replace('/(tabs)');
+        if (session?.user) {
+          console.log('✅ User authenticated successfully:', session.user.email);
+          router.replace('/(tabs)');
+        } else {
+          console.log('⚠️ No active session found, redirecting to login');
+          router.replace('/login');
+        }
       } catch (error) {
         console.error('❌ Error in auth callback:', error);
         router.replace('/login');
@@ -39,7 +36,7 @@ export default function AuthCallback() {
     };
 
     handleAuthCallback();
-  }, [params, router]);
+  }, [router]);
 
   return (
     <View style={styles.container}>
