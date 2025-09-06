@@ -84,11 +84,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear guest mode when user attempts to sign in with Google
       setIsGuest(false);
 
-      // Create the redirect URI dynamically
-      const redirectUrl = AuthSession.makeRedirectUri();
+      // Create the redirect URI - use production domain for web
+      const redirectUrl = Platform.OS === 'web'
+        ? `${window.location.origin}/auth/callback`
+        : AuthSession.makeRedirectUri();
 
-      console.log('🔗 Dynamic Redirect URL:', redirectUrl);
+      console.log('🔗 Redirect URL:', redirectUrl);
       console.log('🔗 Platform:', Platform.OS);
+      console.log('🔗 Current origin:', Platform.OS === 'web' ? window.location.origin : 'N/A');
 
       if (Platform.OS === 'web') {
         // Web version - use auth session with proper redirect
@@ -345,8 +348,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('🔄 Starting password reset for:', email);
 
-      // Use a simple redirect URL for password reset
-      const redirectUrl = Platform.OS === 'web' 
+      // Use production domain for web, dynamic URI for mobile
+      const redirectUrl = Platform.OS === 'web'
         ? `${window.location.origin}/reset-password`
         : AuthSession.makeRedirectUri();
 
